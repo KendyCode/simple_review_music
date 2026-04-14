@@ -198,7 +198,7 @@ def add_review(deezer_id):
     if form.validate_on_submit():
         # A. Vérifier si la track existe déjà en BDD pour éviter les doublons
         track = Track.query.filter_by(deezer_id=str(deezer_id)).first()
-
+        
         # B. Si elle n'existe pas, on la crée à ce moment précis
         if not track:
             track = Track(
@@ -240,19 +240,14 @@ def edit_review(review_id):
         flash("Vous n'avez pas l'autorisation de modifier cet avis.", "danger")
         return redirect(url_for('my_reviews'))
 
-    form = ReviewForm()
+    form = ReviewForm(obj=review)
 
     if form.validate_on_submit():
-        review.content = form.content.data
-        review.rating = form.rating.data
+        form.populate_obj(review)
+
         db.session.commit()
         flash("L'avis a été mis à jour par l'administration." if current_user.is_admin else "L'avis a été avis a été mis à jour !", "success")
         return redirect(request.referrer or url_for('index'))
-
-    # Pré-remplir le formulaire avec les données actuelles
-    elif request.method == 'GET':
-        form.content.data = review.content
-        form.rating.data = review.rating
 
     return render_template('edit_review.html', form=form, track=review.track)
 
