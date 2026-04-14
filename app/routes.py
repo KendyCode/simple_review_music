@@ -2,7 +2,7 @@ import requests
 from flask import render_template, flash, redirect, url_for, request
 from . import db
 from .models import Track, Review, User
-from .forms import SearchForm, ReviewForm
+from .forms import SearchForm, ReviewForm, TrackForm
 from flask_login import current_user, login_required, login_user, logout_user
 from flask import current_app as app
 from .forms import LoginForm, RegistrationForm # Assure-toi d'avoir créé ce formulaire dans forms.py
@@ -37,22 +37,22 @@ def admin_dashboard():
 @login_required
 @admin_required
 def admin_add_track():
-    # Ici, tu peux créer un formulaire manuel ou réutiliser la logique Deezer
-    # Mais pour un admin, on peut vouloir ajouter un titre "Hors API"
-    if request.method == 'POST':
-        new_track = Track(
-            deezer_id=request.form.get('deezer_id'),
-            title=request.form.get('title'),
-            artist=request.form.get('artist'),
-            cover_medium=request.form.get('cover_medium'),
-            cover_big=request.form.get('cover_big'),
-            preview=request.form.get('preview')
-        )
+    form = TrackForm()
+    
+    if form.validate_on_submit():
+        # On crée un nouvel objet Track vide
+        new_track = Track()
+        # On "déverse" les données du formulaire dans l'objet new_track
+        form.populate_obj(new_track)
+        
         db.session.add(new_track)
         db.session.commit()
-        flash("Track ajoutée manuellement !", "success")
+        
+        flash("Track ajoutée avec succès !", "success")
         return redirect(url_for('admin_dashboard'))
-    return render_template('admin/edit_track.html', track=None)
+    
+    # On passe form au template, et track=None pour que le bouton affiche "Ajouter"
+    return render_template('admin/edit_track.html', form=form, track=None)
 
 @app.route('/admin/track/delete/<int:track_id>', methods=['POST'])
 @login_required
@@ -70,20 +70,20 @@ def admin_delete_track(track_id):
 @admin_required
 def admin_edit_track(track_id):
     track = Track.query.get_or_404(track_id)
+    
+    # On pré-remplit le formulaire avec les données actuelles de la base
+    form = TrackForm(obj=track)
 
-    if request.method == 'POST':
-        track.title = request.form.get('title')
-        track.artist = request.form.get('artist')
-        track.deezer_id = request.form.get('deezer_id')
-        track.cover_medium = request.form.get('cover_medium')
-        track.cover_big = request.form.get('cover_big')
-        track.preview = request.form.get('preview')
-
+    if form.validate_on_submit():
+        # On met à jour l'objet 'track' existant avec les nouvelles saisies
+        form.populate_obj(track)
+        
         db.session.commit()
         flash(f"Le titre '{track.title}' a été mis à jour.", "success")
         return redirect(url_for('admin_dashboard'))
 
-    return render_template('admin/edit_track.html', track=track)
+    # On passe l'objet track pour que le template puisse afficher l'image actuelle
+    return render_template('admin/edit_track.html', form=form, track=track)
 
 @app.route('/')
 def index():
@@ -184,6 +184,16 @@ def add_review(deezer_id):
 
     data = response.json()
 
+    # --- AJOUT DE LA LOGIQUE DE PRIORITÉ BDD ---
+    track_db = Track.query.filter_by(deezer_id=str(deezer_id)).first()
+    if track_db:
+        data['title'] = track_db.title
+        data['artist']['name'] = track_db.artist
+        data['album']['cover_medium'] = track_db.cover_medium
+    # --------------------------------------------
+
+    print(data["title"])
+
     # 2. Traitement lors de la validation du formulaire (SUBMIT)
     if form.validate_on_submit():
         # A. Vérifier si la track existe déjà en BDD pour éviter les doublons
@@ -260,6 +270,4 @@ def delete_review(review_id):
     db.session.commit()
     flash("L'avis a été supprimé par l'administration." if current_user.is_admin else "L'avis a été supprimé.", "info")
     return redirect(request.referrer or url_for('index'))
-
-
 

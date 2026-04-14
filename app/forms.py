@@ -23,3 +23,14 @@ class RegistrationForm(FlaskForm):
     confirm_password = PasswordField('Confirmer le mot de passe',
                                      validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('S\'inscrire')
+
+class TrackForm(FlaskForm):
+    title = StringField('Titre de la chanson', validators=[DataRequired(message="Le titre est obligatoire.")])
+    artist = StringField('Artiste', validators=[DataRequired(message="Le nom de l'artiste est obligatoire.")])
+    # On utilise StringField car le Deezer ID est souvent traité comme une chaîne dans ton code
+    deezer_id = StringField('Deezer ID (Numérique)', validators=[DataRequired(message="L'ID Deezer est nécessaire pour le lecteur.")])
+    cover_medium = StringField('URL de la pochette (Medium)', validators=[Length(max=500)])
+    cover_big = StringField('URL de la pochette (Large)', validators=[Length(max=500)])
+    preview = StringField('URL de l\'extrait MP3', validators=[Length(max=500)])
+    
+    submit = SubmitField('Enregistrer')
