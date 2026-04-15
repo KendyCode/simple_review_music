@@ -282,3 +282,13 @@ def delete_review(review_id):
     flash("L'avis a été supprimé par l'administration." if current_user.is_admin else "L'avis a été supprimé.", "info")
     return redirect(request.referrer or url_for('index'))
 
+
+
+# Pour que l'user puisse voir ses reviews 
+
+@app.route('/my-reviews')
+@login_required
+def my_reviews():
+    # current_user.reviews fonctionne grâce au backref='author' dans le modèle User
+    user_reviews = current_user.reviews
+    return render_template('my_reviews.html', reviews=user_reviews)

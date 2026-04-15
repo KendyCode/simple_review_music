@@ -13,7 +13,7 @@
             {% if current_user.is_authenticated %}
             <span class="navbar-text me-3 text-white">Bonjour, {{ current_user.username }}</span>
             <a class="nav-link" href="{{ url_for('search') }}">Rechercher</a>
-            <a class="nav-link" >Mes Avis</a>
+            <a class="nav-link" href="{{ url_for('my_reviews') }}" >Mes Avis</a>
 
             {% if current_user.is_admin %}
             <a class="nav-link text-warning fw-bold" href="{{ url_for('admin_dashboard') }}">
