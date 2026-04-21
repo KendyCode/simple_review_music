@@ -284,3 +284,25 @@ def delete_review(review_id):
     flash("L'avis a été supprimé par l'administration." if current_user.is_admin else "L'avis a été supprimé.", "info")
     return redirect(request.referrer or url_for('index'))
 
+
+# Voir details d'une track
+
+@app.route('/track/<int:deezer_id>')
+def track_details(deezer_id):
+    # 1. Récupérer les infos de la track depuis l'API
+    response = requests.get(f"https://api.deezer.com/track/{deezer_id}", proxies=proxies, timeout=5)
+
+    if response.status_code != 200:
+        flash("Musique introuvable sur Deezer.", "danger")
+        return redirect(url_for('search'))
+
+    data = response.json()
+
+    # APPEL DE LA FONCTION UNIQUE ICI
+    data = apply_db_priority([data])[0]
+
+    # 2. Récupérer les avis liés à cette track depuis la BDD
+    track_in_db = Track.query.filter_by(deezer_id=str(deezer_id)).first()
+    reviews = track_in_db.reviews if track_in_db else []
+
+    return render_template('track_details.html', track=data, reviews=reviews)
